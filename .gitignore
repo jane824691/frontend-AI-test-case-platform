@@ -1,0 +1,4 @@
+/.env.local.example
+/.next
+/.vscode
+/node_modules
