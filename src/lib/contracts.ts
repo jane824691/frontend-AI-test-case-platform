@@ -15,3 +15,92 @@ export interface ApiResponse<T> {
   meta?: { stub: boolean };
 }
 
+export interface RequirementVersionSummary {
+  requirementVersionId: number;
+  versionNumber: number;
+  changeSummary: string | null;
+  updatedAt: string | null;
+}
+
+export interface ProjectSummary {
+  projectId: number;
+  name: string;
+  statusCode: number;
+  owner: {
+    userId: number;
+    name: string;
+    role: Role | string;
+  } | null;
+  membersSummary: {
+    total: number;
+    admins: number;
+    pms: number;
+    qas: number;
+    developers: number;
+  };
+  latestRequirementVersion: RequirementVersionSummary | null;
+  sectionCount: number;
+  testCaseCount: number;
+  draftCount: number;
+  publishedCount: number;
+  rejectedCount: number;
+  updatedAt: string;
+}
+
+export interface RequirementSectionSummary {
+  requirementSectionId: number;
+  sectionKey: string;
+  heading: string;
+  headingPath: string;
+  sectionOrder: number;
+  statusCode: number;
+  testCaseCount: number;
+  draftCount: number;
+  publishedCount: number;
+  rejectedCount: number;
+}
+
+export interface TestCaseSummary {
+  testCaseId: number;
+  projectId: number;
+  requirementSectionId: number | null;
+  sectionKey: string | null;
+  stableCaseCode: string;
+  currentStatus: TestCaseStatus | string;
+  updatedByUserId: number | null;
+  updatedByUserName: string | null;
+  updatedAt: string | null;
+  passFailResult: PassFailResult | string | null;
+  passFailUpdatedByUserId: number | null;
+  passFailUpdatedByName: string | null;
+  latestVersion: {
+    testCaseVersionId: number | null;
+    revisionNumber: number | null;
+    title: string | null;
+    priority: string | null;
+    suggestedTestLevel: string | null;
+  };
+}
+
+export interface TestCaseDetail extends TestCaseSummary {
+  currentTestCaseVersionId: number | null;
+  publishedTestCaseVersionId: number | null;
+  latestVersion: TestCaseSummary['latestVersion'] & {
+    description: string | null;
+    preconditions: string | null;
+    expectedResult: string | null;
+    reusabilityNote: string | null;
+    unitTestRecommended: boolean;
+    generatedByAi: boolean;
+    updatedByUserId: number | null;
+    updatedByUserName: string | null;
+    updatedAt: string | null;
+  };
+}
+
+export interface ProjectWorkspace {
+  project: ProjectSummary;
+  latestRequirementVersion: RequirementVersionSummary | null;
+  sections: RequirementSectionSummary[];
+  recentTestCases: TestCaseSummary[];
+}

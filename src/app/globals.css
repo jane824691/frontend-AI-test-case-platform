@@ -9,12 +9,53 @@ a { color: inherit; text-decoration: none; }
 .app-shell { min-height: 100vh; }
 .app-logo { display: flex; gap: 10px; align-items: center; color: #202123; font-size: 15px; font-weight: 650; }
 .app-logo-mark { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; color: #fff; background: #10a37f; }
-.content { width: 100%; max-width: 1160px; margin: 0 auto; padding: 38px 44px 72px; }
+.content { width: 100%; max-width: 1220px; margin: 0 auto; padding: 38px 44px 72px; }
 .page-kicker { display: block; margin-bottom: 8px; color: #10a37f; font-size: 13px; font-weight: 600; }
-.page-title { margin: 0 0 26px !important; color: #202123 !important; font-weight: 650 !important; letter-spacing: -.025em; }
-.stub-panel { border: 1px solid #e5e5e5; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .03); }
+.page-title { margin: 0 0 26px !important; color: #202123 !important; font-weight: 650 !important; letter-spacing: 0; }
+.stub-panel, .workspace-card, .metric-card { border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .03); }
 .panel-copy { margin-bottom: 20px; color: #6e6e80; line-height: 1.75; }
 .session-controls { display: flex; align-items: center; gap: 10px; }
 .session-user { color: #565869; font-size: 13px; }
 .error-text { color: #cf1322; font-size: 12px; }
-@media (max-width: 768px) { .content { padding: 28px 20px 56px; } }
+.project-overview { display: grid; gap: 16px; }
+.section-heading { width: 100%; }
+.section-heading h2 { margin: 0 !important; color: #202123 !important; font-size: 20px !important; font-weight: 650 !important; letter-spacing: 0; }
+.section-heading p { margin: 0 !important; color: #6e6e80; line-height: 1.7; }
+.heading-icon { display: grid; flex: 0 0 auto; width: 34px; height: 34px; place-items: center; border-radius: 8px; color: #0f7f64; background: #e7f6f1; }
+.table-toolbar { width: 100%; justify-content: space-between; margin-bottom: 14px; }
+.project-link { color: #0f7f64; font-weight: 650; }
+.workspace-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+.workspace-detail, .full-width { width: 100%; }
+.tree-card { position: sticky; top: 84px; }
+.metric-card .ant-card-body { padding: 16px; }
+.workspace-list { display: grid; gap: 10px; }
+.workspace-list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid #ececf1; }
+.workspace-list-row p { margin: 6px 0 0 !important; color: #6e6e80; line-height: 1.65; }
+.case-progress { width: min(240px, 100%); }
+.metric-card h3 { margin: 4px 0 0 !important; color: #202123 !important; }
+.case-master-detail { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+.case-requirement-panel { position: sticky; top: 84px; }
+.requirement-list { display: grid; gap: 8px; }
+.requirement-item { width: 100%; padding: 12px; border: 1px solid #ececf1; border-radius: 8px; color: #202123; background: #fff; text-align: left; cursor: pointer; }
+.requirement-item:hover, .requirement-item.active { border-color: #10a37f; background: #f2fbf8; }
+.requirement-item-title { display: block; margin-bottom: 8px; font-weight: 650; }
+.requirement-item-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #6e6e80; font-size: 13px; }
+.case-card-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 16px; align-items: start; padding: 16px; border: 1px solid #ececf1; border-radius: 8px; background: #fff; }
+.case-card-row p { margin: 8px 0 0 !important; color: #6e6e80; line-height: 1.65; }
+.case-title-link { display: block; margin-top: 8px; color: #0f7f64; font-size: 16px; font-weight: 650; }
+.case-owner { display: grid; gap: 4px; justify-items: end; text-align: right; }
+.compact-descriptions .ant-descriptions-item-label { color: #6e6e80; width: 72px; }
+.compact-descriptions .ant-descriptions-item-content { color: #2d333a; line-height: 1.55; }
+@media (max-width: 1024px) {
+  .workspace-layout { grid-template-columns: 1fr; }
+  .tree-card { position: static; }
+  .case-master-detail { grid-template-columns: 1fr; }
+  .case-requirement-panel { position: static; }
+}
+@media (max-width: 768px) {
+  .content { padding: 28px 20px 56px; }
+  .table-toolbar { align-items: flex-start; }
+  .workspace-list-row { grid-template-columns: 1fr; }
+  .case-card-row { grid-template-columns: 1fr; }
+  .case-owner { justify-items: start; text-align: left; }
+}
