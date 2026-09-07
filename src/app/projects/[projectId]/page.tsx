@@ -182,7 +182,7 @@ export default function ProjectWorkspacePage() {
     return (
       <AppShell title="Project 工作區">
         <Card className="workspace-card" variant="outlined">
-          <Spin tip="正在讀取 project workspace..." />
+          <Spin description="正在讀取 project workspace..." />
         </Card>
       </AppShell>
     );

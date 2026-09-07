@@ -24,6 +24,8 @@ export const api = {
     request<{ projectId: number; requirementSectionId: number; items: TestCaseSummary[]; total: number }>(
       `/projects/${projectId}/sections/${sectionId}/test-cases`,
     ),
+  listTestCases: (projectId: number | string) =>
+    request<{ projectId: number; items: TestCaseSummary[]; total: number }>(`/projects/${projectId}/test-cases`),
   getTestCaseDetail: (projectId: number | string, testCaseId: number | string) =>
     request<TestCaseDetail>(`/projects/${projectId}/test-cases/${testCaseId}`),
 };

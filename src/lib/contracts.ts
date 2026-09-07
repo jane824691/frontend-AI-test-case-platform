@@ -67,6 +67,8 @@ export interface TestCaseSummary {
   sectionKey: string | null;
   stableCaseCode: string;
   currentStatus: TestCaseStatus | string;
+  currentTestCaseVersionId: number | null;
+  publishedTestCaseVersionId: number | null;
   updatedByUserId: number | null;
   updatedByUserName: string | null;
   updatedAt: string | null;
@@ -80,11 +82,13 @@ export interface TestCaseSummary {
     priority: string | null;
     suggestedTestLevel: string | null;
   };
+  publishedVersion: {
+    testCaseVersionId: number | null;
+    revisionNumber: number | null;
+  };
 }
 
 export interface TestCaseDetail extends TestCaseSummary {
-  currentTestCaseVersionId: number | null;
-  publishedTestCaseVersionId: number | null;
   latestVersion: TestCaseSummary['latestVersion'] & {
     description: string | null;
     preconditions: string | null;
