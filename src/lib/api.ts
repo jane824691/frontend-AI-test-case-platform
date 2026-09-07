@@ -1,4 +1,16 @@
-import type { ApiResponse, ProjectSummary, ProjectWorkspace, Role, SessionUser, TestCaseDetail, TestCaseSummary } from './contracts';
+import type {
+  ApiResponse,
+  ProjectSummary,
+  ProjectWorkspace,
+  RequirementUploadPayload,
+  RequirementUploadResponse,
+  Role,
+  SessionUser,
+  TestCaseDetail,
+  TestCaseEditorPayload,
+  TestCaseMutationResponse,
+  TestCaseSummary,
+} from './contracts';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3003/api/v1';
 
@@ -28,4 +40,24 @@ export const api = {
     request<{ projectId: number; items: TestCaseSummary[]; total: number }>(`/projects/${projectId}/test-cases`),
   getTestCaseDetail: (projectId: number | string, testCaseId: number | string) =>
     request<TestCaseDetail>(`/projects/${projectId}/test-cases/${testCaseId}`),
+  createTestCase: (projectId: number | string, payload: TestCaseEditorPayload) =>
+    request<TestCaseMutationResponse>(`/projects/${projectId}/test-cases`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateTestCase: (projectId: number | string, testCaseId: number | string, payload: TestCaseEditorPayload) =>
+    request<TestCaseMutationResponse>(`/projects/${projectId}/test-cases/${testCaseId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  publishTestCase: (projectId: number | string, testCaseId: number | string, comment: string) =>
+    request<TestCaseMutationResponse & { published: boolean }>(`/projects/${projectId}/test-cases/${testCaseId}/publish`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    }),
+  uploadMarkdownRequirement: (projectId: number | string, payload: RequirementUploadPayload) =>
+    request<RequirementUploadResponse>(`/projects/${projectId}/requirement-documents/upload`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };

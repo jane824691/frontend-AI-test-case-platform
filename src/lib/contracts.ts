@@ -108,3 +108,83 @@ export interface ProjectWorkspace {
   sections: RequirementSectionSummary[];
   recentTestCases: TestCaseSummary[];
 }
+
+export interface TestCaseEditorPayload {
+  requirementSectionId: number | null;
+  stableCaseCode?: string;
+  title: string;
+  description: string;
+  preconditions: string | null;
+  expectedResult: string;
+  priority: string;
+  suggestedTestLevel: string;
+  reusabilityNote: string | null;
+  unitTestRecommended: boolean;
+}
+
+export interface TestCaseMutationResponse {
+  testCaseId: number;
+  currentStatus: TestCaseStatus | string;
+  latestVersion: {
+    testCaseVersionId: number | null;
+    revisionNumber: number | null;
+  };
+  updatedByUserId: number | null;
+  updatedByUserName: string | null;
+  updatedAt: string | null;
+}
+
+export interface RequirementUploadPayload {
+  markdown: string;
+  changeSummary: string | null;
+}
+
+export interface RequirementUploadResponse {
+  projectId: number;
+  requirementDocumentId: number;
+  requirementVersionId: number;
+  versionNumber: number;
+  generationStatus: string;
+  sectionCount: number;
+  updatedAt: string | null;
+}
+
+export interface TestCaseEditorPayload {
+  requirementSectionId: number | null;
+  stableCaseCode?: string;
+  title: string;
+  description: string;
+  preconditions: string | null;
+  expectedResult: string;
+  priority: string;
+  suggestedTestLevel: string;
+  reusabilityNote: string | null;
+  unitTestRecommended: boolean;
+}
+
+export interface TestCaseMutationResponse {
+  testCaseId: number;
+  currentStatus: TestCaseStatus | string;
+  latestVersion: {
+    testCaseVersionId: number | null;
+    revisionNumber: number | null;
+  };
+  updatedByUserId: number | null;
+  updatedByUserName: string | null;
+  updatedAt: string | null;
+}
+
+export interface RequirementUploadPayload {
+  markdown: string;
+  changeSummary: string | null;
+}
+
+export interface RequirementUploadResponse {
+  projectId: number;
+  requirementDocumentId: number;
+  requirementVersionId: number;
+  versionNumber: number;
+  generationStatus: string;
+  sectionCount: number;
+  updatedAt: string | null;
+}

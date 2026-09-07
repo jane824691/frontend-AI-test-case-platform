@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfigProvider } from 'antd';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import type { ReactNode } from 'react';
 
 export function UiProvider({ children }: { children: ReactNode }) {
@@ -15,7 +15,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
         },
       }}
     >
-      {children}
+      <AntdApp>{children}</AntdApp>
     </ConfigProvider>
   );
 }
