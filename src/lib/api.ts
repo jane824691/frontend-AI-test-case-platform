@@ -9,6 +9,7 @@ import type {
   TestCaseDetail,
   TestCaseEditorPayload,
   TestCaseMutationResponse,
+  TestCasePublishResponse,
   TestCaseSummary,
 } from './contracts';
 
@@ -51,7 +52,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   publishTestCase: (projectId: number | string, testCaseId: number | string, comment: string) =>
-    request<TestCaseMutationResponse & { published: boolean }>(`/projects/${projectId}/test-cases/${testCaseId}/publish`, {
+    request<TestCasePublishResponse>(`/projects/${projectId}/test-cases/${testCaseId}/publish`, {
       method: 'POST',
       body: JSON.stringify({ comment }),
     }),

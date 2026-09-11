@@ -9,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-Hant"><body><UiProvider>{children}</UiProvider></body></html>;
+  return (
+    <html lang="zh-Hant">
+      <body><UiProvider>{children}</UiProvider></body>
+    </html>
+  );
 }

@@ -46,6 +46,11 @@ a { color: inherit; text-decoration: none; }
 .case-owner { display: grid; gap: 4px; justify-items: end; text-align: right; }
 .compact-descriptions .ant-descriptions-item-label { color: #6e6e80; width: 72px; }
 .compact-descriptions .ant-descriptions-item-content { color: #2d333a; line-height: 1.55; }
+.editor-page { display: grid; gap: 16px; }
+.editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.case-editor-form, .requirement-form { margin-top: 18px; }
+.requirement-summary { padding-bottom: 18px; border-bottom: 1px solid #ececf1; }
+.requirement-summary h2 { margin: 0 !important; color: #202123 !important; font-size: 20px !important; letter-spacing: 0; }
 @media (max-width: 1024px) {
   .workspace-layout { grid-template-columns: 1fr; }
   .tree-card { position: static; }
@@ -58,4 +63,5 @@ a { color: inherit; text-decoration: none; }
   .workspace-list-row { grid-template-columns: 1fr; }
   .case-card-row { grid-template-columns: 1fr; }
   .case-owner { justify-items: start; text-align: left; }
+  .editor-grid { grid-template-columns: 1fr; }
 }
