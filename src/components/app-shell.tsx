@@ -6,7 +6,6 @@ import {
   AppstoreOutlined,
   CheckCircleOutlined,
   EditOutlined,
-  FileTextOutlined,
   FolderOpenOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -17,16 +16,11 @@ import { SessionControls } from './session-controls';
 
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const pathname = usePathname();
-  const projectId = pathname.match(/^\/projects\/([^/]+)/)?.[1];
+  const projectId = pathname.match(/^\/projects\/(\d+)/)?.[1];
   const projectBase = projectId ? `/projects/${projectId}` : '/projects';
   const projectHref = (path: string) => (projectId ? `${projectBase}${path}` : '/projects');
   const navigation = [
     { key: '/projects', icon: <FolderOpenOutlined />, label: <Link href="/projects">專案列表</Link> },
-    {
-      key: `${projectBase}/requirements`,
-      icon: <FileTextOutlined />,
-      label: <Link href={projectHref('/requirements')}>需求文件</Link>,
-    },
     { key: `${projectBase}/sections`, icon: <AppstoreOutlined />, label: <Link href={projectBase}>章節檢視</Link> },
     {
       key: `${projectBase}/test-cases`,

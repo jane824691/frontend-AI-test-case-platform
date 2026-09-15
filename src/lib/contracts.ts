@@ -19,6 +19,7 @@ export interface RequirementVersionSummary {
   requirementVersionId: number;
   versionNumber: number;
   changeSummary: string | null;
+  rawMarkdown: string | null;
   updatedAt: string | null;
 }
 
@@ -144,6 +145,7 @@ export interface TestCasePublishResponse {
 }
 
 export interface RequirementUploadPayload {
+  projectName?: string;
   markdown: string;
   changeSummary: string | null;
 }
@@ -155,5 +157,6 @@ export interface RequirementUploadResponse {
   versionNumber: number;
   generationStatus: string;
   sectionCount: number;
+  generatedTestCaseCount?: number;
   updatedAt: string | null;
 }

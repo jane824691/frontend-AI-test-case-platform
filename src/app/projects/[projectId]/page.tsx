@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import {
   ApartmentOutlined,
   CheckCircleOutlined,
+  EditOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
   ProfileOutlined,
@@ -62,6 +63,10 @@ function testCaseTitle(testCase: TestCaseSummary) {
   return testCase.latestVersion.title ?? testCase.stableCaseCode;
 }
 
+function canEditRequirement(role?: string) {
+  return role === 'admin' || role === 'pm';
+}
+
 function buildTreeData(
   workspace: ProjectWorkspace,
   sectionCases: Record<number, TestCaseSummary[]>,
@@ -104,6 +109,7 @@ export default function ProjectWorkspacePage() {
   const [loadingSectionId, setLoadingSectionId] = useState<number | null>(null);
   const [loadingCaseId, setLoadingCaseId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const editableRequirement = canEditRequirement(user?.projectRole ?? user?.globalRole);
 
   useEffect(() => {
     if (isSessionLoading || !user) return;
@@ -228,12 +234,21 @@ export default function ProjectWorkspacePage() {
               <Space orientation="vertical" size={16} className="full-width">
                 <Space className="section-heading" align="start">
                   <span className="heading-icon"><FileTextOutlined /></span>
-                  <Space orientation="vertical" size={4}>
-                    <Typography.Title level={2}>{workspace.project.name}</Typography.Title>
+                  <div className="workspace-heading-content">
+                    <div className="workspace-title-actions">
+                      <Typography.Title level={2}>{workspace.project.name}</Typography.Title>
+                      <Button
+                        icon={<EditOutlined />}
+                        href={`/projects/${workspace.project.projectId}/requirements/new`}
+                        disabled={!editableRequirement}
+                      >
+                        編輯需求
+                      </Button>
+                    </div>
                     <Typography.Paragraph>
                       {workspace.latestRequirementVersion?.changeSummary ?? '此 project 尚未建立需求版本，或目前沒有需求版本摘要。'}
                     </Typography.Paragraph>
-                  </Space>
+                  </div>
                 </Space>
                 <Descriptions
                   column={{ xs: 1, md: 2 }}
@@ -350,7 +365,7 @@ export default function ProjectWorkspacePage() {
                       <Button href={`/projects/${workspace.project.projectId}/test-cases/${caseDetail.testCaseId}`} type="primary">
                         進入編輯器
                       </Button>
-                      <Link href={`/projects/${workspace.project.projectId}/test-cases`}>查看此 Project 所有 Test Case</Link>
+                      <Button href={`/projects/${workspace.project.projectId}/test-cases`}>查看此 Project 所有 Test Case</Button>
                     </Space>
                   </Space>
                 )}

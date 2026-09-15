@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRightOutlined, FileTextOutlined, ProjectOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined, FileTextOutlined, PlusOutlined, ProjectOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Empty, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { AppShell } from '@/components/app-shell';
@@ -86,11 +86,16 @@ const columns: ColumnsType<ProjectSummary> = [
   },
 ];
 
+function canCreateProject(role?: string) {
+  return role === 'admin' || role === 'pm';
+}
+
 export default function ProjectsPage() {
   const { user, isLoading: isSessionLoading } = useSessionStore();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canCreate = canCreateProject(user?.projectRole ?? user?.globalRole);
 
   useEffect(() => {
     if (isSessionLoading || !user) return;
@@ -104,17 +109,22 @@ export default function ProjectsPage() {
   }, [isSessionLoading, user]);
 
   return (
-    <AppShell title="專案總覽">
+    <AppShell title="專案列表">
       <div className="project-overview">
         <Card className="workspace-card" variant="outlined">
-          <Space className="section-heading" align="start">
-            <span className="heading-icon"><ProjectOutlined /></span>
-            <Space orientation="vertical" size={4}>
-              <Typography.Title level={2}>以 Project 為入口檢視需求與測試案例</Typography.Title>
-              <Typography.Paragraph>
-                每列 project 都帶出需求版本、案例狀態與負責人，點進名稱後可看見需求章節與 test case 的上下游關聯。
-              </Typography.Paragraph>
+          <Space className="table-toolbar" align="start" wrap>
+            <Space className="section-heading" align="start">
+              <span className="heading-icon"><ProjectOutlined /></span>
+              <Space orientation="vertical" size={4}>
+                <Typography.Title level={2}>以 Project 為入口檢視需求與測試案例</Typography.Title>
+                <Typography.Paragraph>
+                  每次上傳一份新的 Markdown 需求文件會建立一個新 project；進入 project 後可編輯需求版本與 test case。
+                </Typography.Paragraph>
+              </Space>
             </Space>
+            <Button type="primary" icon={<PlusOutlined />} href="/projects/new" disabled={!canCreate}>
+              新增需求專案
+            </Button>
           </Space>
         </Card>
 

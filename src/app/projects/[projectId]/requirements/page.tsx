@@ -72,7 +72,7 @@ export default function RequirementsPage() {
               <Space orientation="vertical" size={4}>
                 <Typography.Title level={2}>Markdown 需求版本</Typography.Title>
                 <Typography.Paragraph>
-                  PM 或 Admin 可以在這裡新增 Markdown 文字需求；每次送出都會建立新的需求版本，供後續章節分析與 AI 產生 test case draft。
+                  PM 或 Admin 可以新增 Markdown 文字需求。後端會儲存版本、切分章節、呼叫 AI 產生 test case draft，並寫回 DB。
                 </Typography.Paragraph>
               </Space>
             </Space>
@@ -82,7 +82,7 @@ export default function RequirementsPage() {
               href={`/projects/${params.projectId}/requirements/new`}
               disabled={!canCreate}
             >
-              新增需求
+              編輯需求
             </Button>
           </Space>
         </Card>

@@ -14,15 +14,31 @@ import type {
 } from './contracts';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3003/api/v1';
+const inFlightGetRequests = new Map<string, Promise<ApiResponse<unknown>>>();
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const method = init?.method?.toUpperCase() ?? 'GET';
+  const requestKey = `${method} ${path}`;
+  if (method === 'GET') {
+    const inFlight = inFlightGetRequests.get(requestKey);
+    if (inFlight) return inFlight as Promise<ApiResponse<T>>;
+  }
+
+  const requestPromise = fetch(`${apiBaseUrl}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...init?.headers },
     ...init,
+  }).then((response) => {
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+    return response.json() as Promise<ApiResponse<T>>;
   });
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-  return response.json() as Promise<ApiResponse<T>>;
+
+  if (method === 'GET') {
+    inFlightGetRequests.set(requestKey, requestPromise as Promise<ApiResponse<unknown>>);
+    requestPromise.finally(() => inFlightGetRequests.delete(requestKey));
+  }
+
+  return requestPromise;
 }
 
 export const api = {
@@ -32,6 +48,11 @@ export const api = {
     body: JSON.stringify({ role }),
   }),
   listProjects: () => request<{ items: ProjectSummary[]; total: number }>('/projects'),
+  createProjectFromRequirement: (payload: RequirementUploadPayload) =>
+    request<RequirementUploadResponse>('/projects/from-requirement', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   getProjectWorkspace: (projectId: number | string) => request<ProjectWorkspace>(`/projects/${projectId}/workspace`),
   listSectionTestCases: (projectId: number | string, sectionId: number | string) =>
     request<{ projectId: number; requirementSectionId: number; items: TestCaseSummary[]; total: number }>(
@@ -59,6 +80,11 @@ export const api = {
   uploadMarkdownRequirement: (projectId: number | string, payload: RequirementUploadPayload) =>
     request<RequirementUploadResponse>(`/projects/${projectId}/requirement-documents/upload`, {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateCurrentRequirementText: (projectId: number | string, payload: RequirementUploadPayload) =>
+    request<RequirementUploadResponse>(`/projects/${projectId}/requirement-documents/current`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 };
