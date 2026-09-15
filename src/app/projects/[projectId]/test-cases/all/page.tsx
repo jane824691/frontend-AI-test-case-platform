@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeftOutlined, EditOutlined, FileTextOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Descriptions, Empty, Progress, Space, Spin, Table, Tag, Typography } from 'antd';
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, FileTextOutlined, SendOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Card, Descriptions, Empty, Progress, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { Key } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
 import type { ProjectWorkspace, TestCaseDetail, TestCaseSummary } from '@/lib/contracts';
@@ -52,6 +53,10 @@ function buildSectionNameMap(workspace: ProjectWorkspace | null) {
   return new Map(
     workspace?.sections.map((section) => [section.requirementSectionId, section.heading]) ?? [],
   );
+}
+
+function canManageCases(role?: string) {
+  return role === 'admin' || role === 'pm' || role === 'qa';
 }
 
 function buildColumns(projectId: string, sectionNameById: Map<number, string>): ColumnsType<TestCaseDetail> {
@@ -151,34 +156,96 @@ function buildColumns(projectId: string, sectionNameById: Map<number, string>): 
 
 export default function AllTestCasesPage() {
   const params = useParams<{ projectId: string }>();
+  const { message, modal } = App.useApp();
   const { user, isLoading: isSessionLoading } = useSessionStore();
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
   const [testCases, setTestCases] = useState<TestCaseDetail[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBulkPublishing, setIsBulkPublishing] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionNameById = useMemo(() => buildSectionNameMap(workspace), [workspace]);
   const publishedCount = testCases.filter((testCase) => testCase.currentStatus === 'published').length;
   const completionRate = testCases.length === 0 ? 0 : Math.round((publishedCount / testCases.length) * 100);
+  const canManage = canManageCases(user?.projectRole ?? user?.globalRole);
+  const selectedTestCaseIds = selectedRowKeys.map((key) => Number(key)).filter((key) => Number.isInteger(key));
+  const hasSelectedCases = selectedTestCaseIds.length > 0;
 
-  useEffect(() => {
-    if (isSessionLoading || !user) return;
-
-    setIsLoading(true);
-    setError(null);
-    Promise.all([
-      api.getProjectWorkspace(params.projectId),
-      api.listTestCases(params.projectId),
-    ])
-      .then(async ([workspaceResponse, listResponse]) => {
+  const loadTestCases = useMemo(
+    () => async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [workspaceResponse, listResponse] = await Promise.all([
+          api.getProjectWorkspace(params.projectId),
+          api.listTestCases(params.projectId),
+        ]);
         setWorkspace(workspaceResponse.data);
         const details = await Promise.all(
           listResponse.data.items.map((testCase) => api.getTestCaseDetail(params.projectId, testCase.testCaseId)),
         );
         setTestCases(details.map((detail) => detail.data));
-      })
-      .catch(() => setError('目前無法取得全部 test case 與版本化內容，請確認後端服務與權限。'))
-      .finally(() => setIsLoading(false));
-  }, [isSessionLoading, params.projectId, user]);
+        setSelectedRowKeys([]);
+      } catch {
+        setError('目前無法取得全部 test case 與版本化內容，請確認後端服務與權限。');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [params.projectId],
+  );
+
+  useEffect(() => {
+    if (isSessionLoading || !user) return;
+
+    void loadTestCases();
+  }, [isSessionLoading, loadTestCases, user]);
+
+  async function handleBulkPublish() {
+    if (!hasSelectedCases) return;
+
+    setIsBulkPublishing(true);
+    setError(null);
+    try {
+      await Promise.all(
+        selectedTestCaseIds.map((testCaseId) =>
+          api.publishTestCase(params.projectId, testCaseId, 'Bulk published from all test cases list.'),
+        ),
+      );
+      message.success(`已發布 ${selectedTestCaseIds.length} 筆測試案例`);
+      await loadTestCases();
+    } catch {
+      setError('確認發佈失敗。請確認目前角色為 Admin、PM 或 QA，且選取的測試案例都有可發布版本。');
+    } finally {
+      setIsBulkPublishing(false);
+    }
+  }
+
+  function handleConfirmDelete() {
+    if (!hasSelectedCases) return;
+
+    modal.confirm({
+      title: '確認是否刪除選擇的用例？',
+      content: `將刪除 ${selectedTestCaseIds.length} 筆測試案例與其版本紀錄。此動作無法從畫面復原。`,
+      okText: '確定刪除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setIsBulkDeleting(true);
+        setError(null);
+        try {
+          await Promise.all(selectedTestCaseIds.map((testCaseId) => api.deleteTestCase(params.projectId, testCaseId)));
+          message.success(`已刪除 ${selectedTestCaseIds.length} 筆測試案例`);
+          await loadTestCases();
+        } catch {
+          setError('刪除用例失敗。請確認目前角色為 Admin、PM 或 QA，且測試案例仍存在。');
+        } finally {
+          setIsBulkDeleting(false);
+        }
+      },
+    });
+  }
 
   if (!isSessionLoading && !user) {
     return (
@@ -226,6 +293,11 @@ export default function AllTestCasesPage() {
           <Spin spinning={isSessionLoading || isLoading}>
             <Table
               rowKey="testCaseId"
+              rowSelection={{
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+                preserveSelectedRowKeys: false,
+              }}
               columns={buildColumns(params.projectId, sectionNameById)}
               dataSource={testCases}
               pagination={false}
@@ -233,6 +305,31 @@ export default function AllTestCasesPage() {
               locale={{ emptyText: <Empty description="目前沒有 test case" /> }}
             />
           </Spin>
+          {canManage && (
+            <div className="case-bulk-actions">
+              <Typography.Text type="secondary">已選取 {selectedTestCaseIds.length} 筆</Typography.Text>
+              <Space wrap>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  disabled={!hasSelectedCases}
+                  loading={isBulkPublishing}
+                  onClick={handleBulkPublish}
+                >
+                  確認發佈
+                </Button>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={!hasSelectedCases}
+                  loading={isBulkDeleting}
+                  onClick={handleConfirmDelete}
+                >
+                  刪除用例
+                </Button>
+              </Space>
+            </div>
+          )}
         </Card>
       </div>
     </AppShell>

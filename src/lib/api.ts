@@ -77,6 +77,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ comment }),
     }),
+  deleteTestCase: (projectId: number | string, testCaseId: number | string) =>
+    request<{ projectId: number; testCaseId: number; deleted: boolean }>(`/projects/${projectId}/test-cases/${testCaseId}`, {
+      method: 'DELETE',
+    }),
   uploadMarkdownRequirement: (projectId: number | string, payload: RequirementUploadPayload) =>
     request<RequirementUploadResponse>(`/projects/${projectId}/requirement-documents/upload`, {
       method: 'POST',

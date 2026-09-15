@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckOutlined, EditOutlined, PlusOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, PlusOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import { Alert, App, Button, Card, Checkbox, Form, Input, Select, Space, Spin, Tag, Typography } from 'antd';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
@@ -97,7 +97,10 @@ export function TestCaseEditorForm({
         setWorkspace(workspaceResponse.data);
         const loadedDetail = detailResponse?.data ?? null;
         setDetail(loadedDetail);
-        const firstSectionId = workspaceResponse.data.sections[0]?.requirementSectionId ?? null;
+        const requestedSectionId = Number(new URLSearchParams(window.location.search).get('sectionId'));
+        const firstSectionId = Number.isInteger(requestedSectionId) && requestedSectionId > 0
+          ? requestedSectionId
+          : workspaceResponse.data.sections[0]?.requirementSectionId ?? null;
         form.setFieldsValue(
           mode === 'create'
             ? {
@@ -130,7 +133,11 @@ export function TestCaseEditorForm({
         ? await api.createTestCase(projectId, payload)
         : await api.updateTestCase(projectId, caseId!, payload);
 
-      message.success(mode === 'create' ? '已建立測試案例草稿' : '已儲存測試案例');
+      if (mode === 'create') {
+        await api.publishTestCase(projectId, response.data.testCaseId, 'Manual test case reviewed and published on creation.');
+      }
+
+      message.success(mode === 'create' ? '已建立並發布手動測試案例' : '已儲存測試案例');
       router.push(`/projects/${projectId}/test-cases/${response.data.testCaseId}`);
       router.refresh();
     } catch {
@@ -146,11 +153,13 @@ export function TestCaseEditorForm({
     setIsPublishing(true);
     setError(null);
     try {
+      const values = await form.validateFields();
+      await api.updateTestCase(projectId, caseId, toPayload(values));
       await api.publishTestCase(projectId, caseId, 'Published from editor.');
-      message.success('已發布測試案例');
+      message.success('已儲存變更並發布測試案例');
       router.refresh();
     } catch {
-      setError('發布失敗。只有 Admin、PM 或 QA 可以發布測試案例。');
+      setError('發布失敗。請確認必填欄位完整，且目前角色具有編輯與發布測試案例的權限。');
     } finally {
       setIsPublishing(false);
     }
@@ -175,16 +184,18 @@ export function TestCaseEditorForm({
               <span className="heading-icon">{mode === 'create' ? <PlusOutlined /> : <EditOutlined />}</span>
               <Space orientation="vertical" size={4}>
                 <Typography.Title level={2}>
-                  {mode === 'create' ? '建立人工測試案例草稿' : detail?.latestVersion.title ?? '編輯測試案例'}
+                  {mode === 'create' ? '手動新增 Test Case' : detail?.latestVersion.title ?? '編輯測試案例'}
                 </Typography.Title>
                 <Typography.Paragraph>
-                  新增與編輯共用同一組欄位；送出時依模式分別呼叫 create 或 patch API，AI 產生的草稿仍由 PM/QA 人工確認後才可發布。
+                  {mode === 'create'
+                    ? 'PM 或 QA 手動補上的案例會在儲存後直接發布，作為已審閱的團隊可見案例。'
+                    : '新增與編輯共用同一組欄位；AI 產生的草稿仍由 PM/QA 人工確認後才可發布。'}
                 </Typography.Paragraph>
               </Space>
             </Space>
             <Space wrap>
               {detail && <Tag color="blue">{statusLabel(detail.currentStatus)}</Tag>}
-              <Button href={`/projects/${projectId}/test-cases`}>返回列表</Button>
+              <Button icon={<ArrowLeftOutlined />} href={`/projects/${projectId}/test-cases`}>返回列表</Button>
             </Space>
           </Space>
         </Card>
@@ -241,9 +252,9 @@ export function TestCaseEditorForm({
                 <Form.Item label="建議優先級" name="priority" rules={[{ required: true, message: '請選擇優先級' }]}>
                   <Select
                     options={[
-                      { label: 'High', value: 'high' },
-                      { label: 'Medium', value: 'medium' },
-                      { label: 'Low', value: 'low' },
+                      { label: 'p1', value: 'high' },
+                      { label: 'p2', value: 'medium' },
+                      { label: 'p3', value: 'low' },
                     ]}
                   />
                 </Form.Item>
@@ -268,16 +279,13 @@ export function TestCaseEditorForm({
 
               <Space wrap>
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isSaving}>
-                  {mode === 'create' ? '建立草稿' : '儲存變更'}
+                  {mode === 'create' ? '建立並發布' : '儲存變更'}
                 </Button>
                 {mode === 'edit' && editable && (
                   <Button icon={<SendOutlined />} onClick={handlePublish} loading={isPublishing}>
                     發布
                   </Button>
                 )}
-                <Link href={`/projects/${projectId}/test-cases`}>
-                  <Button icon={<CheckOutlined />}>完成</Button>
-                </Link>
               </Space>
             </Form>
           </Spin>

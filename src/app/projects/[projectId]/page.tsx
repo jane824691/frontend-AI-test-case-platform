@@ -10,13 +10,18 @@ import {
   FileTextOutlined,
   FolderOpenOutlined,
   ProfileOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Col, Descriptions, Empty, Row, Space, Spin, Statistic, Tag, Tree, Typography } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
-import type { ProjectWorkspace, TestCaseDetail, TestCaseSummary } from '@/lib/contracts';
+import type { ProjectWorkspace, RequirementSectionSummary, TestCaseDetail, TestCaseSummary } from '@/lib/contracts';
 import { useSessionStore } from '@/stores/session-store';
+
+const OTHER_SECTION_ID = -1;
+
+type DisplaySection = RequirementSectionSummary & { isOther?: boolean };
 
 function statusColor(status: string) {
   if (status === 'published') return 'green';
@@ -69,19 +74,21 @@ function canEditRequirement(role?: string) {
 
 function buildTreeData(
   workspace: ProjectWorkspace,
-  sectionCases: Record<number, TestCaseSummary[]>,
+  sections: DisplaySection[],
+  projectTestCases: TestCaseSummary[],
 ): DataNode[] {
   return [
     {
       key: `project:${workspace.project.projectId}`,
       title: 'Project 文件',
       icon: <FolderOpenOutlined />,
-      children: workspace.sections.map((section) => {
-        const loadedCases = sectionCases[section.requirementSectionId];
-        const recentCases = workspace.recentTestCases.filter(
-          (testCase) => testCase.requirementSectionId === section.requirementSectionId,
+      children: sections.map((section) => {
+        const visibleCases = projectTestCases.filter((testCase) =>
+          section.isOther
+            ? testCase.requirementSectionId === null
+              || !sections.some((candidate) => !candidate.isOther && candidate.requirementSectionId === testCase.requirementSectionId)
+            : testCase.requirementSectionId === section.requirementSectionId,
         );
-        const visibleCases = loadedCases ?? recentCases;
 
         return {
           key: `section:${section.requirementSectionId}`,
@@ -102,11 +109,10 @@ export default function ProjectWorkspacePage() {
   const params = useParams<{ projectId: string }>();
   const { user, isLoading: isSessionLoading } = useSessionStore();
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
+  const [projectTestCases, setProjectTestCases] = useState<TestCaseSummary[]>([]);
   const [selectedKey, setSelectedKey] = useState(`project:${params.projectId}`);
-  const [sectionCases, setSectionCases] = useState<Record<number, TestCaseSummary[]>>({});
   const [caseDetail, setCaseDetail] = useState<TestCaseDetail | null>(null);
   const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(false);
-  const [loadingSectionId, setLoadingSectionId] = useState<number | null>(null);
   const [loadingCaseId, setLoadingCaseId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const editableRequirement = canEditRequirement(user?.projectRole ?? user?.globalRole);
@@ -116,11 +122,14 @@ export default function ProjectWorkspacePage() {
 
     setIsWorkspaceLoading(true);
     setError(null);
-    api.getProjectWorkspace(params.projectId)
-      .then((response) => {
-        setWorkspace(response.data);
-        setSelectedKey(`project:${response.data.project.projectId}`);
-        setSectionCases({});
+    Promise.all([
+      api.getProjectWorkspace(params.projectId),
+      api.listTestCases(params.projectId),
+    ])
+      .then(([workspaceResponse, testCasesResponse]) => {
+        setWorkspace(workspaceResponse.data);
+        setProjectTestCases(testCasesResponse.data.items);
+        setSelectedKey(`project:${workspaceResponse.data.project.projectId}`);
         setCaseDetail(null);
       })
       .catch(() => setError('目前無法取得 project 工作區資料，請確認 project 是否存在，且目前角色有讀取權限。'))
@@ -129,19 +138,6 @@ export default function ProjectWorkspacePage() {
 
   const selectedSectionId = selectedKey.startsWith('section:') ? Number(selectedKey.replace('section:', '')) : null;
   const selectedCaseId = selectedKey.startsWith('case:') ? Number(selectedKey.replace('case:', '')) : null;
-
-  useEffect(() => {
-    if (!workspace || selectedSectionId === null || sectionCases[selectedSectionId]) return;
-
-    setLoadingSectionId(selectedSectionId);
-    setError(null);
-    api.listSectionTestCases(workspace.project.projectId, selectedSectionId)
-      .then((response) => {
-        setSectionCases((current) => ({ ...current, [selectedSectionId]: response.data.items }));
-      })
-      .catch(() => setError('目前無法取得此章節的 test case 清單。'))
-      .finally(() => setLoadingSectionId(null));
-  }, [sectionCases, selectedSectionId, workspace]);
 
   useEffect(() => {
     if (!workspace || selectedCaseId === null) return;
@@ -154,14 +150,57 @@ export default function ProjectWorkspacePage() {
       .finally(() => setLoadingCaseId(null));
   }, [selectedCaseId, workspace]);
 
-  const treeData = useMemo(() => (workspace ? buildTreeData(workspace, sectionCases) : []), [sectionCases, workspace]);
+  const displaySections = useMemo<DisplaySection[]>(() => {
+    if (!workspace) return [];
+
+    const latestSectionIds = new Set(workspace.sections.map((section) => section.requirementSectionId));
+    const mappedSections = workspace.sections.map((section) => {
+      const cases = projectTestCases.filter((testCase) => testCase.requirementSectionId === section.requirementSectionId);
+      return {
+        ...section,
+        testCaseCount: cases.length,
+        draftCount: cases.filter((testCase) => testCase.currentStatus === 'draft').length,
+        publishedCount: cases.filter((testCase) => testCase.currentStatus === 'published').length,
+        rejectedCount: cases.filter((testCase) => testCase.currentStatus === 'rejected').length,
+      };
+    });
+    const otherCases = projectTestCases.filter(
+      (testCase) => !testCase.requirementSectionId || !latestSectionIds.has(testCase.requirementSectionId),
+    );
+
+    if (otherCases.length === 0) return mappedSections;
+    return [
+      ...mappedSections,
+      {
+        requirementSectionId: OTHER_SECTION_ID,
+        sectionKey: 'other',
+        heading: '其他',
+        headingPath: '未歸類至目前需求標題的 Test Case',
+        sectionOrder: mappedSections.length,
+        statusCode: 0,
+        testCaseCount: otherCases.length,
+        draftCount: otherCases.filter((testCase) => testCase.currentStatus === 'draft').length,
+        publishedCount: otherCases.filter((testCase) => testCase.currentStatus === 'published').length,
+        rejectedCount: otherCases.filter((testCase) => testCase.currentStatus === 'rejected').length,
+        isOther: true,
+      },
+    ];
+  }, [projectTestCases, workspace]);
+
+  const treeData = useMemo(
+    () => (workspace ? buildTreeData(workspace, displaySections, projectTestCases) : []),
+    [displaySections, projectTestCases, workspace],
+  );
   const selectedSection = selectedSectionId === null
     ? undefined
-    : workspace?.sections.find((section) => section.requirementSectionId === selectedSectionId);
-  const selectedSectionCases = selectedSection
-    ? sectionCases[selectedSection.requirementSectionId]
-      ?? workspace?.recentTestCases.filter((testCase) => testCase.requirementSectionId === selectedSection.requirementSectionId)
-      ?? []
+    : displaySections.find((section) => section.requirementSectionId === selectedSectionId);
+  const selectedSectionCases = selectedSection?.isOther
+    ? projectTestCases.filter(
+        (testCase) => !testCase.requirementSectionId
+          || !displaySections.some((section) => !section.isOther && section.requirementSectionId === testCase.requirementSectionId),
+      )
+    : selectedSection
+      ? projectTestCases.filter((testCase) => testCase.requirementSectionId === selectedSection.requirementSectionId)
     : [];
 
   if (!isSessionLoading && !user) {
@@ -206,7 +245,7 @@ export default function ProjectWorkspacePage() {
                 <Typography.Text type="secondary">點章節載入對應 test case，點案例載入完整明細</Typography.Text>
               </Space>
             </Space>
-            <Spin spinning={isWorkspaceLoading || loadingSectionId !== null}>
+            <Spin spinning={isWorkspaceLoading}>
               <Tree
                 showIcon
                 defaultExpandAll
@@ -261,13 +300,15 @@ export default function ProjectWorkspacePage() {
                 />
                 <div className="workspace-list">
                   <Typography.Text strong>需求章節</Typography.Text>
-                  {workspace.sections.length === 0 && <Empty description="目前最新需求版本尚無章節資料" />}
-                  {workspace.sections.map((section) => (
+                  {displaySections.length === 0 && <Empty description="目前最新需求版本尚無章節資料" />}
+                  {displaySections.map((section) => (
                     <div className="workspace-list-row" key={section.requirementSectionId}>
                       <div>
                         <Space wrap>
                           {section.heading}
-                          <Tag color={sectionStatusColor(section.statusCode)}>{sectionStatusLabel(section.statusCode)}</Tag>
+                          <Tag color={section.isOther ? 'default' : sectionStatusColor(section.statusCode)}>
+                            {section.isOther ? '未歸類' : sectionStatusLabel(section.statusCode)}
+                          </Tag>
                         </Space>
                         <Typography.Paragraph>
                           {section.headingPath}，已關聯 {section.testCaseCount} 筆 test case。
@@ -292,15 +333,20 @@ export default function ProjectWorkspacePage() {
                     <Typography.Title level={2}>{selectedSection.heading}</Typography.Title>
                     <Typography.Paragraph>{selectedSection.headingPath}</Typography.Paragraph>
                   </Space>
+                  <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases`}>
+                    查看此 Project 所有 Test Case
+                  </Button>
                 </Space>
                 <Space wrap>
-                  <Tag color={sectionStatusColor(selectedSection.statusCode)}>{sectionStatusLabel(selectedSection.statusCode)}</Tag>
+                  <Tag color={selectedSection.isOther ? 'default' : sectionStatusColor(selectedSection.statusCode)}>
+                    {selectedSection.isOther ? '未歸類' : sectionStatusLabel(selectedSection.statusCode)}
+                  </Tag>
                   <Tag>Test Case {selectedSection.testCaseCount}</Tag>
                   <Tag color="blue">草稿 {selectedSection.draftCount}</Tag>
                   <Tag color="green">已發布 {selectedSection.publishedCount}</Tag>
                   <Tag color="red">退回 {selectedSection.rejectedCount}</Tag>
                 </Space>
-                <Spin spinning={loadingSectionId === selectedSection.requirementSectionId}>
+                <Spin spinning={isWorkspaceLoading}>
                   <div className="workspace-list">
                     <Typography.Text strong>此章節延伸出的 Test Case</Typography.Text>
                     {selectedSectionCases.length === 0 && <Empty description="此章節目前沒有 test case" />}
@@ -365,7 +411,7 @@ export default function ProjectWorkspacePage() {
                       <Button href={`/projects/${workspace.project.projectId}/test-cases/${caseDetail.testCaseId}`} type="primary">
                         進入編輯器
                       </Button>
-                      <Button href={`/projects/${workspace.project.projectId}/test-cases`}>查看此 Project 所有 Test Case</Button>
+                      <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases`}>查看此 Project 所有 Test Case</Button>
                     </Space>
                   </Space>
                 )}

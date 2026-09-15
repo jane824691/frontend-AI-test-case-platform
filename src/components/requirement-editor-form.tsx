@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileTextOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
+import { FileTextOutlined, SaveOutlined, SendOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Alert, App, Button, Card, Form, Input, Space, Spin, Typography } from 'antd';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
@@ -128,7 +128,7 @@ export function RequirementEditorForm({
                 </Typography.Paragraph>
               </Space>
             </Space>
-            <Button href={isNewProject ? '/projects' : `/projects/${projectId}`}>
+            <Button icon={<ArrowLeftOutlined />} href={isNewProject ? '/projects' : `/projects/${projectId}`}>
               {isNewProject ? '返回專案列表' : '返回需求頁'}
             </Button>
           </Space>
@@ -182,7 +182,7 @@ export function RequirementEditorForm({
                 name="markdown"
                 rules={[{ required: true, whitespace: true, message: '請輸入 Markdown 需求內容' }]}
               >
-                <Input.TextArea rows={18} />
+                <Input.TextArea placeholder={`例如：##欲作為需求分區的標題\n\n功能名稱新增：\n\n使用者列表搜尋\n\n搜尋結果應顯示：\n\n使用者 ID、使用者姓名、Email、帳號狀態 etc\n\n`} rows={18} />
               </Form.Item>
               <Space wrap>
                 {!isNewProject && (
