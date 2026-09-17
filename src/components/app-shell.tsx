@@ -19,27 +19,38 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   const projectId = pathname.match(/^\/projects\/(\d+)/)?.[1];
   const projectBase = projectId ? `/projects/${projectId}` : '/projects';
   const projectHref = (path: string) => (projectId ? `${projectBase}${path}` : '/projects');
+  const projectNavigation = {
+    key: '/projects',
+    icon: <FolderOpenOutlined />,
+    label: <Link href="/projects">專案列表</Link>,
+    children: projectId
+      ? [
+          {
+            key: `${projectBase}/test-cases`,
+            icon: <EditOutlined />,
+            label: <Link href={`${projectBase}/test-cases/all`}>測試案例</Link>,
+          },
+        ]
+      : undefined,
+  };
   const navigation = [
-    { key: '/projects', icon: <FolderOpenOutlined />, label: <Link href="/projects">專案列表</Link> },
-    { key: `${projectBase}/sections`, icon: <AppstoreOutlined />, label: <Link href={projectBase}>章節檢視</Link> },
-    {
-      key: `${projectBase}/test-cases`,
-      icon: <EditOutlined />,
-      label: <Link href={projectHref('/test-cases')}>測試案例</Link>,
-    },
-    {
-      key: `${projectBase}/approval-queue`,
-      icon: <SafetyCertificateOutlined />,
-      label: <Link href={projectHref('/approval-queue')}>審核佇列</Link>,
-    },
-    {
-      key: `${projectBase}/published`,
-      icon: <CheckCircleOutlined />,
-      label: <Link href={projectHref('/published')}>已發布案例</Link>,
-    },
+    projectNavigation,
+    // {
+    //   key: `${projectBase}/approval-queue`,
+    //   icon: <SafetyCertificateOutlined />,
+    //   label: <Link href={projectHref('/approval-queue')}>審核佇列</Link>,
+    // },
+    // {
+    //   key: `${projectBase}/published`,
+    //   icon: <CheckCircleOutlined />,
+    //   label: <Link href={projectHref('/published')}>已發布案例</Link>,
+    // },
     { key: '/permissions', icon: <SettingOutlined />, label: <Link href="/permissions">權限設定</Link> },
   ];
-  const selectedKey = [...navigation].reverse().find((item) => pathname.startsWith(item.key))?.key ?? '/projects';
+  const testCasesKey = projectId ? `${projectBase}/test-cases` : null;
+  const selectedKey = testCasesKey && pathname.startsWith(testCasesKey)
+    ? testCasesKey
+    : [...navigation].reverse().find((item) => pathname.startsWith(item.key))?.key ?? '/projects';
 
   return (
     <Layout className="app-shell">
@@ -54,7 +65,13 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           <span className="app-logo-mark">AI</span>
           AI 測試案例平台
         </Link>
-        <Menu mode="inline" selectedKeys={[selectedKey]} items={navigation} style={{ marginTop: 26, borderInlineEnd: 0 }} />
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          defaultOpenKeys={testCasesKey ? ['/projects'] : []}
+          items={navigation}
+          style={{ marginTop: 26, borderInlineEnd: 0 }}
+        />
       </Layout.Sider>
       <Layout style={{ background: '#f7f7f8' }}>
         <Layout.Header

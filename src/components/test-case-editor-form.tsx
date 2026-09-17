@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftOutlined, EditOutlined, PlusOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, PlusOutlined, RollbackOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import { Alert, App, Button, Card, Checkbox, Form, Input, Select, Space, Spin, Tag, Typography } from 'antd';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
@@ -27,6 +27,10 @@ interface EditorValues {
 
 function canEditCase(role?: string) {
   return role === 'admin' || role === 'pm' || role === 'qa';
+}
+
+function canReopenCase(role?: string) {
+  return role === 'admin' || role === 'pm';
 }
 
 function statusLabel(status: string) {
@@ -81,8 +85,10 @@ export function TestCaseEditorForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editable = canEditCase(user?.projectRole ?? user?.globalRole);
+  const canReopen = canReopenCase(user?.projectRole ?? user?.globalRole);
   const pageTitle = mode === 'create' ? '新增測試案例' : '測試案例編輯器';
 
   useEffect(() => {
@@ -165,6 +171,23 @@ export function TestCaseEditorForm({
     }
   }
 
+  async function handleReopen() {
+    if (!caseId) return;
+
+    setIsReopening(true);
+    setError(null);
+    try {
+      const response = await api.reopenTestCase(projectId, caseId);
+      setDetail(response.data);
+      message.success('測試案例已退回草稿');
+      router.refresh();
+    } catch {
+      setError('退回草稿失敗。只有 Admin 或 PM 可以將已發布測試案例退回草稿。');
+    } finally {
+      setIsReopening(false);
+    }
+  }
+
   if (!isSessionLoading && !user) {
     return (
       <AppShell title={pageTitle}>
@@ -195,7 +218,7 @@ export function TestCaseEditorForm({
             </Space>
             <Space wrap>
               {detail && <Tag color="blue">{statusLabel(detail.currentStatus)}</Tag>}
-              <Button icon={<ArrowLeftOutlined />} href={`/projects/${projectId}/test-cases`}>返回列表</Button>
+              <Button icon={<ArrowLeftOutlined />} href={`/projects/${projectId}/test-cases/all`}>返回全部 Test Case</Button>
             </Space>
           </Space>
         </Card>
@@ -281,9 +304,14 @@ export function TestCaseEditorForm({
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isSaving}>
                   {mode === 'create' ? '建立並發布' : '儲存變更'}
                 </Button>
-                {mode === 'edit' && editable && (
+                {mode === 'edit' && editable && detail?.currentStatus !== 'published' && (
                   <Button icon={<SendOutlined />} onClick={handlePublish} loading={isPublishing}>
                     發布
+                  </Button>
+                )}
+                {mode === 'edit' && canReopen && detail?.currentStatus === 'published' && (
+                  <Button icon={<RollbackOutlined />} onClick={handleReopen} loading={isReopening}>
+                    退回草稿
                   </Button>
                 )}
               </Space>

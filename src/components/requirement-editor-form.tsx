@@ -85,7 +85,7 @@ export function RequirementEditorForm({
         router.push(`/projects/${response.data.projectId}`);
       } else {
         message.success(`已建立需求版本 v${response.data.versionNumber}，產生 ${generatedCount} 筆測試案例草稿`);
-        router.push(`/projects/${response.data.projectId}/test-cases`);
+        router.push(`/projects/${response.data.projectId}/test-cases/all`);
       }
       router.refresh();
     } catch {

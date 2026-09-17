@@ -9,6 +9,7 @@ import {
   EditOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
+  PlusOutlined,
   ProfileOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
@@ -72,6 +73,10 @@ function canEditRequirement(role?: string) {
   return role === 'admin' || role === 'pm';
 }
 
+function canCreateTestCase(role?: string) {
+  return role === 'admin' || role === 'pm' || role === 'qa';
+}
+
 function buildTreeData(
   workspace: ProjectWorkspace,
   sections: DisplaySection[],
@@ -116,6 +121,7 @@ export default function ProjectWorkspacePage() {
   const [loadingCaseId, setLoadingCaseId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const editableRequirement = canEditRequirement(user?.projectRole ?? user?.globalRole);
+  const canManuallyCreateCase = canCreateTestCase(user?.projectRole ?? user?.globalRole);
 
   useEffect(() => {
     if (isSessionLoading || !user) return;
@@ -276,13 +282,26 @@ export default function ProjectWorkspacePage() {
                   <div className="workspace-heading-content">
                     <div className="workspace-title-actions">
                       <Typography.Title level={2}>{workspace.project.name}</Typography.Title>
-                      <Button
-                        icon={<EditOutlined />}
-                        href={`/projects/${workspace.project.projectId}/requirements/new`}
-                        disabled={!editableRequirement}
-                      >
-                        編輯需求
-                      </Button>
+                      <Space orientation="vertical" size={8} className="workspace-title-action-buttons">
+                        <Button
+                          icon={<EditOutlined />}
+                          href={`/projects/${workspace.project.projectId}/requirements/new`}
+                          disabled={!editableRequirement}
+                        >
+                          編輯需求
+                        </Button>
+                        <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases/all`}>
+                          查看此 Project 所有 Test Case
+                        </Button>
+                        <Button
+                          type="primary"
+                          icon={<PlusOutlined />}
+                          href={`/projects/${workspace.project.projectId}/test-cases/new`}
+                          disabled={!canManuallyCreateCase || workspace.sections.length === 0}
+                        >
+                          手動新增 Test Case
+                        </Button>
+                      </Space>
                     </div>
                     <Typography.Paragraph>
                       {workspace.latestRequirementVersion?.changeSummary ?? '此 project 尚未建立需求版本，或目前沒有需求版本摘要。'}
@@ -333,7 +352,7 @@ export default function ProjectWorkspacePage() {
                     <Typography.Title level={2}>{selectedSection.heading}</Typography.Title>
                     <Typography.Paragraph>{selectedSection.headingPath}</Typography.Paragraph>
                   </Space>
-                  <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases`}>
+                  <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases/all`}>
                     查看此 Project 所有 Test Case
                   </Button>
                 </Space>
@@ -411,7 +430,7 @@ export default function ProjectWorkspacePage() {
                       <Button href={`/projects/${workspace.project.projectId}/test-cases/${caseDetail.testCaseId}`} type="primary">
                         進入編輯器
                       </Button>
-                      <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases`}>查看此 Project 所有 Test Case</Button>
+                      <Button icon={<ArrowRightOutlined />} href={`/projects/${workspace.project.projectId}/test-cases/all`}>查看此 Project 所有 Test Case</Button>
                     </Space>
                   </Space>
                 )}

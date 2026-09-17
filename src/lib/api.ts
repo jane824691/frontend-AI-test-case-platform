@@ -11,6 +11,7 @@ import type {
   TestCaseMutationResponse,
   TestCasePublishResponse,
   TestCaseSummary,
+  PassFailResult,
 } from './contracts';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3003/api/v1';
@@ -77,9 +78,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ comment }),
     }),
+  reopenTestCase: (projectId: number | string, testCaseId: number | string) =>
+    request<TestCaseDetail>(`/projects/${projectId}/test-cases/${testCaseId}/reopen`, {
+      method: 'POST',
+    }),
   deleteTestCase: (projectId: number | string, testCaseId: number | string) =>
     request<{ projectId: number; testCaseId: number; deleted: boolean }>(`/projects/${projectId}/test-cases/${testCaseId}`, {
       method: 'DELETE',
+    }),
+  updateTestCaseResult: (projectId: number | string, testCaseId: number | string, result: PassFailResult) =>
+    request<TestCaseDetail>(`/projects/${projectId}/test-cases/${testCaseId}/result`, {
+      method: 'PATCH',
+      body: JSON.stringify({ result }),
     }),
   uploadMarkdownRequirement: (projectId: number | string, payload: RequirementUploadPayload) =>
     request<RequirementUploadResponse>(`/projects/${projectId}/requirement-documents/upload`, {

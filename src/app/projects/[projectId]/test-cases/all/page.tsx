@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, FileTextOutlined, SendOutlined } from '@ant-design/icons';
-import { Alert, App, Button, Card, Descriptions, Empty, Progress, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Descriptions, Empty, Progress, Select, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
-import type { ProjectWorkspace, TestCaseDetail, TestCaseSummary } from '@/lib/contracts';
+import type { PassFailResult, ProjectWorkspace, TestCaseDetail, TestCaseSummary } from '@/lib/contracts';
 import { useSessionStore } from '@/stores/session-store';
 
 function statusLabel(status: string) {
@@ -23,15 +23,8 @@ function statusColor(status: string) {
 function resultLabel(result: string | null) {
   if (result === 'pass') return '通過';
   if (result === 'fail') return '失敗';
-  if (result === 'hold') return '暫緩';
+  if (result === 'hold') return '保留';
   return '未測試';
-}
-
-function resultColor(result: string | null) {
-  if (result === 'pass') return 'green';
-  if (result === 'fail') return 'red';
-  if (result === 'hold') return 'orange';
-  return 'default';
 }
 
 function formatDate(value: string | null) {
@@ -59,7 +52,12 @@ function canManageCases(role?: string) {
   return role === 'admin' || role === 'pm' || role === 'qa';
 }
 
-function buildColumns(projectId: string, sectionNameById: Map<number, string>): ColumnsType<TestCaseDetail> {
+function buildColumns(
+  projectId: string,
+  sectionNameById: Map<number, string>,
+  onResultChange: (testCaseId: number, result: PassFailResult) => void,
+  updatingResultIds: Set<number>,
+): ColumnsType<TestCaseDetail> {
   return [
     {
       title: 'Test Case 與版本內容',
@@ -122,10 +120,23 @@ function buildColumns(projectId: string, sectionNameById: Map<number, string>): 
     {
       title: '人工結果',
       key: 'manualResult',
-      width: 150,
+      width: 180,
       render: (_, testCase) => (
         <Space orientation="vertical" size={4}>
-          <Tag color={resultColor(testCase.passFailResult)}>{resultLabel(testCase.passFailResult)}</Tag>
+          <Select
+            aria-label={`${testCaseTitle(testCase)} 的人工結果`}
+            className="full-width"
+            value={(testCase.passFailResult as PassFailResult | null) ?? undefined}
+            placeholder={resultLabel(null)}
+            loading={updatingResultIds.has(testCase.testCaseId)}
+            disabled={updatingResultIds.has(testCase.testCaseId)}
+            onChange={(result: PassFailResult) => onResultChange(testCase.testCaseId, result)}
+            options={[
+              { value: 'pass', label: <span className="manual-result-option manual-result-option-pass">通過</span> },
+              { value: 'fail', label: <span className="manual-result-option manual-result-option-fail">失敗</span> },
+              { value: 'hold', label: <span className="manual-result-option manual-result-option-hold">保留</span> },
+            ]}
+          />
           <Typography.Text type="secondary">{testCase.passFailUpdatedByName ?? '尚無更新者'}</Typography.Text>
         </Space>
       ),
@@ -164,6 +175,7 @@ export default function AllTestCasesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isBulkPublishing, setIsBulkPublishing] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [updatingResultIds, setUpdatingResultIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const sectionNameById = useMemo(() => buildSectionNameMap(workspace), [workspace]);
   const publishedCount = testCases.filter((testCase) => testCase.currentStatus === 'published').length;
@@ -201,6 +213,26 @@ export default function AllTestCasesPage() {
 
     void loadTestCases();
   }, [isSessionLoading, loadTestCases, user]);
+
+  async function handleResultChange(testCaseId: number, result: PassFailResult) {
+    setUpdatingResultIds((current) => new Set(current).add(testCaseId));
+    setError(null);
+    try {
+      const response = await api.updateTestCaseResult(params.projectId, testCaseId, result);
+      setTestCases((current) => current.map((testCase) => (
+        testCase.testCaseId === testCaseId ? response.data : testCase
+      )));
+      message.success('人工結果已更新');
+    } catch {
+      setError('人工結果更新失敗，請確認目前登入角色仍具有更新權限。');
+    } finally {
+      setUpdatingResultIds((current) => {
+        const next = new Set(current);
+        next.delete(testCaseId);
+        return next;
+      });
+    }
+  }
 
   async function handleBulkPublish() {
     if (!hasSelectedCases) return;
@@ -271,8 +303,8 @@ export default function AllTestCasesPage() {
                 </Typography.Paragraph>
               </Space>
             </Space>
-            <Button icon={<ArrowLeftOutlined />} href={`/projects/${params.projectId}/test-cases`}>
-              回需求分組
+            <Button icon={<ArrowLeftOutlined />} href={`/projects/${params.projectId}`}>
+              回專案工作區
             </Button>
           </Space>
         </Card>
@@ -298,7 +330,7 @@ export default function AllTestCasesPage() {
                 onChange: setSelectedRowKeys,
                 preserveSelectedRowKeys: false,
               }}
-              columns={buildColumns(params.projectId, sectionNameById)}
+              columns={buildColumns(params.projectId, sectionNameById, handleResultChange, updatingResultIds)}
               dataSource={testCases}
               pagination={false}
               scroll={{ x: 1360 }}
