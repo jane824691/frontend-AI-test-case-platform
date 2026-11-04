@@ -12,6 +12,8 @@ import type {
   TestCasePublishResponse,
   TestCaseSummary,
   PassFailResult,
+  CiRunSummary,
+  CiSettings,
 } from './contracts';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3003/api/v1';
@@ -61,6 +63,14 @@ export const api = {
     ),
   listTestCases: (projectId: number | string) =>
     request<{ projectId: number; items: TestCaseSummary[]; total: number }>(`/projects/${projectId}/test-cases`),
+  getCiSettings: (projectId: number | string) => request<CiSettings | null>(`/projects/${projectId}/ci-settings`),
+  updateCiSettings: (projectId: number | string, payload: Omit<CiSettings, 'projectCiIntegrationId' | 'projectId' | 'updatedAt'>) =>
+    request<CiSettings>(`/projects/${projectId}/ci-settings`, { method: 'PUT', body: JSON.stringify(payload) }),
+  listCiRuns: (projectId: number | string) => request<{ projectId: number; items: CiRunSummary[]; total: number }>(`/projects/${projectId}/ci-runs`),
+  bindAutomatedTest: (projectId: number | string, testCaseId: number | string, testIdentifier: string) =>
+    request<{ testIdentifier: string }>(`/projects/${projectId}/test-cases/${testCaseId}/automated-test-binding`, { method: 'PUT', body: JSON.stringify({ testIdentifier }) }),
+  unbindAutomatedTest: (projectId: number | string, testCaseId: number | string) =>
+    request<{ deleted: boolean }>(`/projects/${projectId}/test-cases/${testCaseId}/automated-test-binding`, { method: 'DELETE' }),
   getTestCaseDetail: (projectId: number | string, testCaseId: number | string) =>
     request<TestCaseDetail>(`/projects/${projectId}/test-cases/${testCaseId}`),
   createTestCase: (projectId: number | string, payload: TestCaseEditorPayload) =>

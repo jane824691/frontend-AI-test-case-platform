@@ -30,6 +30,16 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
             icon: <EditOutlined />,
             label: <Link href={`${projectBase}/test-cases/all`}>測試案例</Link>,
           },
+          {
+            key: `${projectBase}/ci-runs`,
+            icon: <CheckCircleOutlined />,
+            label: <Link href={`${projectBase}/ci-runs`}>CI Runs</Link>,
+          },
+          {
+            key: `${projectBase}/ci-settings`,
+            icon: <SafetyCertificateOutlined />,
+            label: <Link href={`${projectBase}/ci-settings`}>CI Settings</Link>,
+          },
         ]
       : undefined,
   };

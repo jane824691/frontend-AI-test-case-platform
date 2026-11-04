@@ -118,6 +118,17 @@ function buildColumns(
       render: (status: string) => <Tag color={statusColor(status)}>{statusLabel(status)}</Tag>,
     },
     {
+      title: 'CI 驗證',
+      key: 'ciVerification',
+      width: 180,
+      render: (_, testCase) => (
+        <Space orientation="vertical" size={4}>
+          <Tag color={testCase.automatedTestBinding ? 'blue' : 'default'}>{testCase.automatedTestBinding?.testIdentifier ?? '未綁定'}</Tag>
+          <Tag color={testCase.verificationStatus === 'verified' ? 'green' : testCase.verificationStatus === 'not_verified' ? 'orange' : 'default'}>{testCase.verificationStatus === 'verified' ? '已驗證' : testCase.verificationStatus === 'not_verified' ? '尚未驗證' : '不適用'}</Tag>
+        </Space>
+      ),
+    },
+    {
       title: '人工結果',
       key: 'manualResult',
       width: 180,

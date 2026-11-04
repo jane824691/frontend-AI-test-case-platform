@@ -87,6 +87,35 @@ export interface TestCaseSummary {
     testCaseVersionId: number | null;
     revisionNumber: number | null;
   };
+  automatedTestBinding: { testIdentifier: string } | null;
+  verificationStatus: 'verified' | 'not_verified' | 'not_applicable';
+  lastVerification: { commitSha: string; workflowIdentifier: string; verifiedAt: string } | null;
+}
+
+export interface CiSettings {
+  projectCiIntegrationId: number;
+  projectId: number;
+  githubInstallationId: number;
+  repositoryOwner: string;
+  repositoryName: string;
+  defaultBranch: string;
+  workflowIdentifier: string;
+  junitArtifactName: string;
+  updatedAt: string | null;
+}
+
+export interface CiRunSummary {
+  ciRunId: number;
+  githubRunId: number;
+  githubRunAttempt: number;
+  workflowIdentifier: string;
+  branchName: string;
+  commitSha: string;
+  conclusion: string | null;
+  eligibleForVerification: boolean;
+  ingestionStatus: string;
+  completedAt: string | null;
+  errorMessage: string | null;
 }
 
 export interface TestCaseDetail extends TestCaseSummary {
