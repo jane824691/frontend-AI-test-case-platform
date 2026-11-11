@@ -14,6 +14,7 @@ import type {
   PassFailResult,
   CiRunSummary,
   CiSettings,
+  UpdateCiSettingsPayload,
 } from './contracts';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3003/api/v1';
@@ -64,9 +65,10 @@ export const api = {
   listTestCases: (projectId: number | string) =>
     request<{ projectId: number; items: TestCaseSummary[]; total: number }>(`/projects/${projectId}/test-cases`),
   getCiSettings: (projectId: number | string) => request<CiSettings | null>(`/projects/${projectId}/ci-settings`),
-  updateCiSettings: (projectId: number | string, payload: Omit<CiSettings, 'projectCiIntegrationId' | 'projectId' | 'updatedAt'>) =>
+  updateCiSettings: (projectId: number | string, payload: UpdateCiSettingsPayload) =>
     request<CiSettings>(`/projects/${projectId}/ci-settings`, { method: 'PUT', body: JSON.stringify(payload) }),
   listCiRuns: (projectId: number | string) => request<{ projectId: number; items: CiRunSummary[]; total: number }>(`/projects/${projectId}/ci-runs`),
+  syncCiRuns: (projectId: number | string) => request<{ projectId: number; scannedRunCount: number; syncedRunCount: number; skippedRunCount: number; failedRunCount: number }>(`/projects/${projectId}/ci-sync`, { method: 'POST' }),
   bindAutomatedTest: (projectId: number | string, testCaseId: number | string, testIdentifier: string) =>
     request<{ testIdentifier: string }>(`/projects/${projectId}/test-cases/${testCaseId}/automated-test-binding`, { method: 'PUT', body: JSON.stringify({ testIdentifier }) }),
   unbindAutomatedTest: (projectId: number | string, testCaseId: number | string) =>

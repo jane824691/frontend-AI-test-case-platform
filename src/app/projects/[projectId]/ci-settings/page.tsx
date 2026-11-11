@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, Form, Input, InputNumber, Spin } from "antd";
+import { Alert, Button, Card, Form, Input, InputNumber, message, Spin } from "antd";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { api } from "@/lib/api";
@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 export default function CiSettingsPage() {
   const params = useParams<{ projectId: string }>();
   const [form] = Form.useForm();
+  const [messageApi, messageContextHolder] = message.useMessage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function CiSettingsPage() {
   }, [form, params.projectId]);
   return (
     <AppShell title="Project CI 設定">
+      {messageContextHolder}
       <Card className="workspace-card" title="GitHub Actions 驗證設定">
         <Spin spinning={loading}>
           {error && <Alert type="error" showIcon message={error} />}
@@ -31,12 +33,16 @@ export default function CiSettingsPage() {
             onFinish={(values) =>
               api
                 .updateCiSettings(params.projectId, values)
+                .then(() => {
+                  setError(null);
+                  messageApi.success("儲存成功");
+                })
                 .catch(() => setError("無法儲存 CI 設定。"))
             }
           >
             <Form.Item
-              name="githubInstallationId"
-              label="GitHub App 安裝 ID"
+              name="workflowId"
+              label="GitHub Actions Workflow ID"
               rules={[{ required: true }]}
             >
               <InputNumber className="full-width" />
@@ -64,9 +70,9 @@ export default function CiSettingsPage() {
               <Input />
             </Form.Item>
             <Form.Item
-              name="workflowIdentifier"
-              label="GitHub Actions 工作流程檔名"
-              extra="填入 workflow 檔名，例如 frontend-unit-tests.yml；這不是 JUnit 或 coverage 報告檔。"
+              name="workflowDisplayName"
+              label="GitHub Actions 工作流程顯示名稱"
+              extra="填入顯示名稱，例如 frontend-unit-tests；實際同步會以 Workflow ID 查詢。"
               rules={[{ required: true }]}
             >
               <Input />

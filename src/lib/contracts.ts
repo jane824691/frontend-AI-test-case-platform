@@ -88,20 +88,34 @@ export interface TestCaseSummary {
     revisionNumber: number | null;
   };
   automatedTestBinding: { testIdentifier: string } | null;
-  verificationStatus: 'verified' | 'not_verified' | 'not_applicable';
+  verificationStatus: 'verified' | 'failed' | 'not_verified' | 'not_applicable';
   lastVerification: { commitSha: string; workflowIdentifier: string; verifiedAt: string } | null;
 }
 
 export interface CiSettings {
   projectCiIntegrationId: number;
   projectId: number;
-  githubInstallationId: number;
   repositoryOwner: string;
   repositoryName: string;
   defaultBranch: string;
-  workflowIdentifier: string;
+  workflowId: number | null;
+  workflowDisplayName: string | null;
   junitArtifactName: string;
   updatedAt: string | null;
+  hasPat: boolean;
+  tokenFingerprintSuffix: string | null;
+  credentialUpdatedAt: string | null;
+}
+
+export interface UpdateCiSettingsPayload {
+  repositoryOwner: string;
+  repositoryName: string;
+  defaultBranch: string;
+  workflowId: number;
+  workflowDisplayName?: string;
+  junitArtifactName?: string;
+  personalAccessToken?: string;
+  clearPersonalAccessToken?: boolean;
 }
 
 export interface CiRunSummary {
