@@ -69,14 +69,14 @@ export default function CiRunsPage() {
   return (
     <AppShell title="CI 執行紀錄">
       {messageContextHolder}
-      {error && <Alert className="workspace-card" type="error" showIcon message={error} />}
+      {error && <Alert className="workspace-card" type="error" showIcon title={error} />}
       <Card
         className="workspace-card"
         title="GitHub Actions 執行紀錄"
         extra={canSync ? <Button type="primary" icon={<SyncOutlined />} loading={syncing} onClick={() => void sync()}>同步 GitHub CI 結果</Button> : null}
       >
-        {summary && <Alert className="mb-4" type={summary.failedRunCount > 0 ? "warning" : "success"} showIcon message={`已掃描 ${summary.scannedRunCount} 次；新匯入 ${summary.syncedRunCount} 次；已略過 ${summary.skippedRunCount} 次；失敗 ${summary.failedRunCount} 次。`} />}
-        {!canSync && <Alert className="mb-4" type="info" showIcon message="僅 Admin 或 Developer 可手動同步；你仍可閱讀同步結果。" />}
+        {summary && <Alert className="mb-4" type={summary.failedRunCount > 0 ? "warning" : "success"} showIcon title={`已掃描 ${summary.scannedRunCount} 次；新匯入 ${summary.syncedRunCount} 次；已略過 ${summary.skippedRunCount} 次；失敗 ${summary.failedRunCount} 次。`} />}
+        {!canSync && <Alert className="mb-4" type="info" showIcon title="僅 Admin 或 Developer 可手動同步；你仍可閱讀同步結果。" />}
         <Table<CiRunSummary>
           rowKey="ciRunId"
           dataSource={runs.filter((run) => run.ingestionStatus === "ingested")}
