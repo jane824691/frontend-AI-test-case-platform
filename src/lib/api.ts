@@ -13,6 +13,7 @@ import type {
   TestCaseSummary,
   PassFailResult,
   CiRunSummary,
+  CiTestResult,
   CiSettings,
   UpdateCiSettingsPayload,
 } from './contracts';
@@ -68,6 +69,7 @@ export const api = {
   updateCiSettings: (projectId: number | string, payload: UpdateCiSettingsPayload) =>
     request<CiSettings>(`/projects/${projectId}/ci-settings`, { method: 'PUT', body: JSON.stringify(payload) }),
   listCiRuns: (projectId: number | string) => request<{ projectId: number; items: CiRunSummary[]; total: number }>(`/projects/${projectId}/ci-runs`),
+  listCiTestResults: (projectId: number | string, ciRunId: number | string) => request<{ projectId: number; ciRunId: number; items: CiTestResult[]; total: number }>(`/projects/${projectId}/ci-runs/${ciRunId}/test-results`),
   syncCiRuns: (projectId: number | string) => request<{ projectId: number; scannedRunCount: number; syncedRunCount: number; skippedRunCount: number; failedRunCount: number }>(`/projects/${projectId}/ci-sync`, { method: 'POST' }),
   bindAutomatedTest: (projectId: number | string, testCaseId: number | string, testIdentifier: string) =>
     request<{ testIdentifier: string }>(`/projects/${projectId}/test-cases/${testCaseId}/automated-test-binding`, { method: 'PUT', body: JSON.stringify({ testIdentifier }) }),

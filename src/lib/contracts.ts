@@ -102,9 +102,6 @@ export interface CiSettings {
   workflowDisplayName: string | null;
   junitArtifactName: string;
   updatedAt: string | null;
-  hasPat: boolean;
-  tokenFingerprintSuffix: string | null;
-  credentialUpdatedAt: string | null;
 }
 
 export interface UpdateCiSettingsPayload {
@@ -114,8 +111,6 @@ export interface UpdateCiSettingsPayload {
   workflowId: number;
   workflowDisplayName?: string;
   junitArtifactName?: string;
-  personalAccessToken?: string;
-  clearPersonalAccessToken?: boolean;
 }
 
 export interface CiRunSummary {
@@ -123,13 +118,25 @@ export interface CiRunSummary {
   githubRunId: number;
   githubRunAttempt: number;
   workflowIdentifier: string;
+  workflowId: number | null;
   branchName: string;
   commitSha: string;
   conclusion: string | null;
-  eligibleForVerification: boolean;
+  withinVerificationScope: boolean;
+  eligibleForEvidence: boolean;
   ingestionStatus: string;
   completedAt: string | null;
   errorMessage: string | null;
+}
+
+export interface CiTestResult {
+  ciTestResultId: number;
+  testIdentifier: string;
+  suiteName: string | null;
+  testName: string;
+  outcome: 'passed' | 'failed' | 'skipped' | 'error';
+  durationMs: number | null;
+  failureMessage: string | null;
 }
 
 export interface TestCaseDetail extends TestCaseSummary {

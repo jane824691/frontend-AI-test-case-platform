@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftOutlined, EditOutlined, PlusOutlined, RollbackOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined, RollbackOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import { Alert, App, Button, Card, Checkbox, Form, Input, Select, Space, Spin, Tag, Typography } from 'antd';
 import { AppShell } from '@/components/app-shell';
 import { api } from '@/lib/api';
@@ -86,6 +86,9 @@ export function TestCaseEditorForm({
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
+  const [bindingIdentifier, setBindingIdentifier] = useState('');
+  const [isSavingBinding, setIsSavingBinding] = useState(false);
+  const [isDeletingBinding, setIsDeletingBinding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editable = canEditCase(user?.projectRole ?? user?.globalRole);
   const canReopen = canReopenCase(user?.projectRole ?? user?.globalRole);
@@ -103,6 +106,7 @@ export function TestCaseEditorForm({
         setWorkspace(workspaceResponse.data);
         const loadedDetail = detailResponse?.data ?? null;
         setDetail(loadedDetail);
+        setBindingIdentifier(loadedDetail?.automatedTestBinding?.testIdentifier ?? '');
         const requestedSectionId = Number(new URLSearchParams(window.location.search).get('sectionId'));
         const firstSectionId = Number.isInteger(requestedSectionId) && requestedSectionId > 0
           ? requestedSectionId
@@ -188,6 +192,45 @@ export function TestCaseEditorForm({
     }
   }
 
+  async function handleSaveBinding() {
+    if (!caseId) return;
+    const testIdentifier = bindingIdentifier.trim();
+    if (!testIdentifier) {
+      setError('請輸入要綁定的 CI Test ID。');
+      return;
+    }
+    setIsSavingBinding(true);
+    setError(null);
+    try {
+      const response = await api.bindAutomatedTest(projectId, caseId, testIdentifier);
+      setBindingIdentifier(response.data.testIdentifier);
+      setDetail((current) => current ? { ...current, automatedTestBinding: { testIdentifier: response.data.testIdentifier } } : current);
+      message.success('CI Test ID 綁定成功，已重新計算既有 CI 證據。');
+      router.refresh();
+    } catch {
+      setError('無法儲存 CI Test ID。請確認格式為 TC-<code>，且未被其他案例綁定。');
+    } finally {
+      setIsSavingBinding(false);
+    }
+  }
+
+  async function handleDeleteBinding() {
+    if (!caseId) return;
+    setIsDeletingBinding(true);
+    setError(null);
+    try {
+      await api.unbindAutomatedTest(projectId, caseId);
+      setBindingIdentifier('');
+      setDetail((current) => current ? { ...current, automatedTestBinding: null, verificationStatus: 'not_applicable' } : current);
+      message.success('CI Test ID 已解除綁定。');
+      router.refresh();
+    } catch {
+      setError('無法解除 CI Test ID 綁定。');
+    } finally {
+      setIsDeletingBinding(false);
+    }
+  }
+
   if (!isSessionLoading && !user) {
     return (
       <AppShell title={pageTitle}>
@@ -254,6 +297,29 @@ export function TestCaseEditorForm({
                   <Input placeholder="例如 TC-CHECKOUT-001；未填時可由後端產生" />
                 </Form.Item>
               </div>
+
+              {mode === 'edit' && caseId && (
+                <Form.Item
+                  label="Automated Test Binding（CI Test ID）"
+                  extra="填入 Jest 測試名稱 [TC-...] 中的完整 ID。此欄位獨立於 Stable Case Code，必須手動確認後綁定。"
+                >
+                  <Space.Compact className="full-width">
+                    <Input
+                      value={bindingIdentifier}
+                      onChange={(event) => setBindingIdentifier(event.target.value)}
+                      placeholder="例如 TC-PET-CART-006"
+                    />
+                    <Button type="primary" htmlType="button" loading={isSavingBinding} onClick={() => void handleSaveBinding()}>
+                      儲存綁定
+                    </Button>
+                    {detail?.automatedTestBinding && (
+                      <Button danger htmlType="button" icon={<DeleteOutlined />} loading={isDeletingBinding} onClick={() => void handleDeleteBinding()}>
+                        解除綁定
+                      </Button>
+                    )}
+                  </Space.Compact>
+                </Form.Item>
+              )}
 
               <Form.Item label="標題" name="title" rules={[{ required: true, message: '請輸入測試案例標題' }]}>
                 <Input placeholder="描述此案例要驗證的行為" />
